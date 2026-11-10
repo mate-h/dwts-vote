@@ -1,0 +1,127 @@
+{
+	"season": 34,
+	"week": 4,
+	"night": "Disney Night",
+	"label": "Season 34 · Episode 4 · Disney Night",
+	"couples": [
+		{
+			"id": "efron",
+			"performances": [
+				{
+					"dance": "Quickstep",
+					"song": "Life Is a Highway",
+					"songFrom": "Cars"
+				}
+			]
+		},
+		{
+			"id": "fishel",
+			"performances": [
+				{
+					"dance": "Quickstep",
+					"song": "I Wan'na Be Like You (The Monkey Song)",
+					"songFrom": "The Jungle Book"
+				}
+			]
+		},
+		{
+			"id": "hoying",
+			"performances": [
+				{
+					"dance": "Salsa",
+					"song": "Bop to the Top",
+					"songFrom": "High School Musical"
+				}
+			]
+		},
+		{
+			"id": "earle",
+			"performances": [
+				{
+					"dance": "Viennese Waltz",
+					"song": "Once Upon a Dream",
+					"songFrom": "Maleficent"
+				}
+			]
+		},
+		{
+			"id": "baldwin",
+			"performances": [
+				{
+					"dance": "Quickstep",
+					"song": "Cantina Band",
+					"songFrom": "Star Wars: A New Hope"
+				}
+			]
+		},
+		{
+			"id": "richter",
+			"performances": [
+				{
+					"dance": "Viennese Waltz",
+					"song": "Le Festin",
+					"songFrom": "Ratatouille"
+				}
+			]
+		},
+		{
+			"id": "irwin",
+			"performances": [
+				{
+					"dance": "Cha Cha",
+					"song": "Try Everything",
+					"songFrom": "Zootopia"
+				}
+			]
+		},
+		{
+			"id": "hendrix",
+			"performances": [
+				{
+					"dance": "Quickstep",
+					"song": "Space Mountain",
+					"songFrom": "Space Mountain"
+				}
+			]
+		},
+		{
+			"id": "leavitt",
+			"performances": [
+				{
+					"dance": "Foxtrot",
+					"song": "The Room Where It Happens",
+					"songFrom": "Hamilton"
+				}
+			]
+		},
+		{
+			"id": "chiles",
+			"performances": [
+				{
+					"dance": "Quickstep",
+					"song": "Special Spice",
+					"songFrom": "Tiana's Bayou Adventure"
+				}
+			]
+		},
+		{
+			"id": "affleck",
+			"performances": [
+				{
+					"dance": "Jazz",
+					"song": "Friend Like Me",
+					"songFrom": "Aladdin"
+				}
+			]
+		}
+	],
+	"wentHome": [
+		"baldwin"
+	],
+	"source": {
+		"page": "https://en.wikipedia.org/wiki/Dancing_with_the_Stars_(American_TV_series)_season_34",
+		"revid": 1383593508,
+		"fetched": "2026-11-10",
+		"license": "CC BY-SA 4.0"
+	}
+}

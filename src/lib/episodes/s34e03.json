@@ -1,0 +1,137 @@
+{
+	"season": 34,
+	"week": 3,
+	"night": "TikTok Night",
+	"label": "Season 34 · Episode 3 · TikTok Night",
+	"couples": [
+		{
+			"id": "affleck",
+			"performances": [
+				{
+					"dance": "Cha Cha",
+					"song": "She's a Bad Mama Jama (She's Built, She's Stacked)",
+					"songFrom": "Carl Carlton"
+				}
+			]
+		},
+		{
+			"id": "jauregui",
+			"performances": [
+				{
+					"dance": "Cha Cha",
+					"song": "Work from Home",
+					"songFrom": "Fifth Harmony, feat. Ty Dolla Sign"
+				}
+			]
+		},
+		{
+			"id": "fishel",
+			"performances": [
+				{
+					"dance": "Foxtrot",
+					"song": "Manchild",
+					"songFrom": "Sabrina Carpenter"
+				}
+			]
+		},
+		{
+			"id": "chiles",
+			"performances": [
+				{
+					"dance": "Tango",
+					"song": "Anxiety",
+					"songFrom": "Doechii"
+				}
+			]
+		},
+		{
+			"id": "efron",
+			"performances": [
+				{
+					"dance": "Foxtrot",
+					"song": "Yukon",
+					"songFrom": "Justin Bieber"
+				}
+			]
+		},
+		{
+			"id": "hendrix",
+			"performances": [
+				{
+					"dance": "Tango",
+					"song": "Gnarly",
+					"songFrom": "Katseye"
+				}
+			]
+		},
+		{
+			"id": "leavitt",
+			"performances": [
+				{
+					"dance": "Samba",
+					"song": "Shake Ya Ass (Radio Edit)",
+					"songFrom": "Mystikal"
+				}
+			]
+		},
+		{
+			"id": "hoying",
+			"performances": [
+				{
+					"dance": "Jazz",
+					"song": "Like Jennie",
+					"songFrom": "Jennie"
+				}
+			]
+		},
+		{
+			"id": "baldwin",
+			"performances": [
+				{
+					"dance": "Samba",
+					"song": "Shake It to the Max (Fly) [Remix]",
+					"songFrom": "Moliy, Silent Addy, Skillibeng & Shenseea"
+				}
+			]
+		},
+		{
+			"id": "richter",
+			"performances": [
+				{
+					"dance": "Foxtrot",
+					"song": "Northern Attitude",
+					"songFrom": "Noah Kahan & Hozier"
+				}
+			]
+		},
+		{
+			"id": "irwin",
+			"performances": [
+				{
+					"dance": "Salsa",
+					"song": "Million Dollar Baby",
+					"songFrom": "Tommy Richman"
+				}
+			]
+		},
+		{
+			"id": "earle",
+			"performances": [
+				{
+					"dance": "Quickstep",
+					"song": "Pop Muzik",
+					"songFrom": "M/Robin Scott"
+				}
+			]
+		}
+	],
+	"wentHome": [
+		"jauregui"
+	],
+	"source": {
+		"page": "https://en.wikipedia.org/wiki/Dancing_with_the_Stars_(American_TV_series)_season_34",
+		"revid": 1383593508,
+		"fetched": "2026-11-10",
+		"license": "CC BY-SA 4.0"
+	}
+}
