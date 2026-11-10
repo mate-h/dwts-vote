@@ -1,0 +1,117 @@
+{
+	"season": 34,
+	"week": 6,
+	"night": "Wicked Night",
+	"label": "Season 34 · Episode 6 · Wicked Night",
+	"couples": [
+		{
+			"id": "hoying",
+			"performances": [
+				{
+					"dance": "Contemporary",
+					"song": "The Wizard and I",
+					"songFrom": "Cynthia Erivo, feat. Michelle Yeoh"
+				}
+			]
+		},
+		{
+			"id": "earle",
+			"performances": [
+				{
+					"dance": "Jazz",
+					"song": "What Is This Feeling?",
+					"songFrom": "Ariana Grande & Cynthia Erivo"
+				}
+			]
+		},
+		{
+			"id": "irwin",
+			"performances": [
+				{
+					"dance": "Jazz",
+					"song": "Dancing Through Life",
+					"songFrom": "Jonathan Bailey, feat. Ariana Grande, Ethan Slater, Marissa Bode & Cynthia Erivo"
+				}
+			]
+		},
+		{
+			"id": "leavitt",
+			"performances": [
+				{
+					"dance": "Quickstep",
+					"song": "Popular",
+					"songFrom": "Ariana Grande"
+				}
+			]
+		},
+		{
+			"id": "efron",
+			"performances": [
+				{
+					"dance": "Rumba",
+					"song": "I'm Not That Girl",
+					"songFrom": "Cynthia Erivo"
+				}
+			]
+		},
+		{
+			"id": "richter",
+			"performances": [
+				{
+					"dance": "Jazz",
+					"song": "One Short Day",
+					"songFrom": "Cynthia Erivo, Ariana Grande, Kristin Chenoweth & Idina Menzel, feat. Michael McCorry Rose"
+				}
+			]
+		},
+		{
+			"id": "hendrix",
+			"performances": [
+				{
+					"dance": "Contemporary",
+					"song": "Defying Gravity",
+					"songFrom": "Cynthia Erivo, feat. Ariana Grande"
+				}
+			]
+		},
+		{
+			"id": "affleck",
+			"performances": [
+				{
+					"dance": "Foxtrot",
+					"song": "As Long As You're Mine",
+					"songFrom": "Cynthia Erivo & Jonathan Bailey"
+				}
+			]
+		},
+		{
+			"id": "fishel",
+			"performances": [
+				{
+					"dance": "Argentine Tango",
+					"song": "No Good Deed",
+					"songFrom": "Cynthia Erivo"
+				}
+			]
+		},
+		{
+			"id": "chiles",
+			"performances": [
+				{
+					"dance": "Rumba",
+					"song": "For Good",
+					"songFrom": "Cynthia Erivo & Ariana Grande"
+				}
+			]
+		}
+	],
+	"wentHome": [
+		"hoying"
+	],
+	"source": {
+		"page": "https://en.wikipedia.org/wiki/Dancing_with_the_Stars_(American_TV_series)_season_34",
+		"revid": 1383593508,
+		"fetched": "2026-11-10",
+		"license": "CC BY-SA 4.0"
+	}
+}

@@ -3,5 +3,6 @@ import e0 from './s34e02.json' with { type: 'json' };
 import e1 from './s34e03.json' with { type: 'json' };
 import e2 from './s34e04.json' with { type: 'json' };
 import e3 from './s34e05.json' with { type: 'json' };
+import e4 from './s34e06.json' with { type: 'json' };
 
-export default [e0, e1, e2, e3];
+export default [e0, e1, e2, e3, e4];
