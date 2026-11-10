@@ -1,11 +1,10 @@
 // Episode line-ups live in src/lib/episodes/s<season>e<week>.json, generated from Wikipedia by
 //   node scripts/fetch-episode.mjs --week <n>
-// Every JSON file for the current SEASON shows up in the episode picker automatically.
+// Every episode file for the current SEASON (listed in episodes/index.js, which the script regenerates) shows up in the episode picker automatically.
 // Couples eliminated at the END of an episode stay votable on that episode's ballot.
 // Dance styles are per episode (an unlearned dance each week); multi-dance weeks join them with " · ".
 import { CAST, SEASON as SEASON_NUMBER } from './cast.js';
-
-const files = import.meta.glob('./episodes/*.json', { eager: true, import: 'default' });
+import files from './episodes/index.js';
 
 function toEpisode(data) {
 	const home = new Set(data.wentHome ?? []);
@@ -43,6 +42,7 @@ export function episodeList() {
 		.map(({ id, label }) => ({ id, label }));
 }
 
+export const LATEST_EPISODE = Math.max(...Object.keys(EPISODES).map(Number));
 const FIRST = EPISODES[Math.min(...Object.keys(EPISODES).map(Number))];
 export const SEASON = FIRST.label;
 export const couples = FIRST.couples;

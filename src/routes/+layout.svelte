@@ -2,13 +2,21 @@
 	import { page } from '$app/state';
  import ProfileModal from '#lib/ProfileModal.svelte';
  import { setProfile, ProfileController } from '#lib/profile.svelte.js';
+ import { roomOf, hostToken } from '#lib/api.js';
  setProfile(new ProfileController());
-	let { children } = $props();
-	const links = [
-		{ href: '/', label: 'Vote' },
-		{ href: '/?view=history', label: 'Look back' },
-		{ href: '/results', label: 'Results' }
-	];
+	let { children, data } = $props();
+	const { room, base } = $derived(roomOf(page));
+	let isHost = $state(false);
+	$effect(() => { isHost = !!hostToken(room); });
+	// Cloudflare landing page (no room yet) has no ballot to navigate.
+	const showNav = $derived(!data.cloud || !!room);
+	const links = $derived([
+		{ href: base || '/', label: 'Vote' },
+		{ href: (base || '/') + '?view=history', label: 'Look back' },
+		{ href: base + '/results', label: 'Results' },
+		...(room && isHost ? [{ href: base + '/host', label: 'Host' }] : [])
+	]);
+	const here = $derived(page.url.pathname + (page.url.searchParams.get('view') === 'history' ? '?view=history' : ''));
 </script>
 
 <svelte:head><title>Dancing with the Stars</title><meta name="theme-color" content="#0a0708" /></svelte:head>
@@ -16,15 +24,17 @@
 <div class="sparkles" aria-hidden="true"></div>
 <header>
 	<h1><img src="/dwts-logo.png" alt="Dancing with the Stars" width="2400" height="1117" /></h1>
-	<p class="sub">Season 34</p>
+	<p class="sub">Season 34{#if room}{' · '}<a class="room" href={base + '/host'} title="Invite friends">Room {room}</a>{/if}</p>
 </header>
 <main>{@render children()}</main>
 <ProfileModal />
-<nav>
+{#if showNav}
+<nav class={{ four: links.length > 3 }}>
 	{#each links as l (l.href)}
-		<a href={l.href} class={{active: page.url.pathname + (page.url.searchParams.get('view') === 'history' ? '?view=history' : '') === l.href}}>{l.label}</a>
+		<a href={l.href} class={{active: here === l.href}}>{l.label}</a>
 	{/each}
 </nav>
+{/if}
 
 <style>
 	:global(*) { box-sizing: border-box; }
@@ -54,6 +64,7 @@
 		margin: 0 auto;
 	}
 	.sub { margin: 0.2rem 0 0; font-style: normal; font-size: 0.72rem; font-weight: 700; letter-spacing: 0.2em; text-transform: uppercase; color: #c9a86a; }
+	.sub .room { color: #ffe9a8; text-decoration: none; border-bottom: 1px dashed #c9a86a; font-family: ui-monospace, Menlo, monospace; }
 	header::after { content: ''; display: block; width: 3.6rem; height: 1px; margin: 0.7rem auto 0; background: linear-gradient(90deg, transparent, #d4af37, transparent); }
 	main { position: relative; max-width: 640px; margin: 0 auto; padding: 1rem 1rem calc(env(safe-area-inset-bottom) + 6rem); }
 	nav {
@@ -62,9 +73,10 @@
 		background: rgba(10, 5, 7, 0.92); border-top: 1px solid #5a4416; backdrop-filter: blur(8px);
 	}
 	nav a {
-		flex: 1; max-width: 200px; text-align: center; padding: 0.9rem 0; border-radius: 999px;
+		flex: 1; min-width: 0; max-width: 200px; text-align: center; padding: 0.9rem 0.2rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; border-radius: 999px;
 		color: #d4af37; text-decoration: none; font-weight: 600; border: 1px solid #5a4416;
 	}
+	nav.four a { font-size: 0.9rem; }
 	nav a.active { background: linear-gradient(180deg, #e9c75a, #a8801f); color: #1a0d05; }
 	@media (max-width: 640px) {
 		main { padding-left: 0; padding-right: 0; }
