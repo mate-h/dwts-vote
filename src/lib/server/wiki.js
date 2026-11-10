@@ -1,5 +1,5 @@
 // Parse a Dancing with the Stars (US) season article from English Wikipedia into ballot data.
-// Used by scripts/fetch-episode.mjs, which bundles the results into src/lib/episodes/.
+// Used by scripts/fetch-episode.mjs (bundles seasons into src/lib/episodes/) and by the server for live judges' scores (live.js).
 //
 // The article has a "Couples" cast table (Celebrity / Notability / Professional partner / Status) and a
 // "=== Week N: Theme ===" section per week whose performance tables have Couple / Scores / Dance /
@@ -223,7 +223,7 @@ function splitMusic(music) {
 	return m ? { song: m[1], artist: m[2]?.trim() || undefined } : { song: music.replace(/"/g, ''), artist: undefined };
 }
 
-function extractWeek(sec, match, { season, scores }) {
+function extractWeek(sec, match, { season }) {
 	const tables = tablesIn(sec.body).filter((t) => findCol(t.headers, /^Couple/i) >= 0 && findCol(t.headers, /^Dance/i) >= 0);
 	const couples = new Map();
 	const wentHome = [];
@@ -252,15 +252,21 @@ function extractWeek(sec, match, { season, scores }) {
 				...(song ? { song } : {}),
 				// What the card shows under the song: the artist, else the theme column (film, decade, ...).
 				...(artist || notes[0] ? { songFrom: artist ?? notes[0].value } : {}),
-				...(artist && notes.length ? { notes } : notes.length > 1 ? { notes: notes.slice(1) } : {}),
-				...(scores && col.scores >= 0 ? { score: row[col.scores].text } : {})
+				...(artist && notes.length ? { notes } : notes.length > 1 ? { notes: notes.slice(1) } : {})
 			};
-			if (col.scores >= 0 && /\d/.test(row[col.scores]?.text ?? '')) scored = true;
+			// Judges' scores ("27 (9, 9, 9)") and the result ("Safe", "Eliminated") are spoilers: the app only
+			// shows them to a phone after the room has revealed its own scores for that couple.
+			const score = col.scores >= 0 ? row[col.scores]?.text ?? '' : '';
+			if (/\d/.test(score)) scored = true;
 			const result = col.result >= 0 ? row[col.result]?.text ?? '' : '';
 			for (const m of members) {
 				if (!couples.has(m.id)) couples.set(m.id, { ...m, performances: [] });
 				const c = couples.get(m.id);
-				if (!c.performances.some((p) => p.dance === perf.dance && p.song === perf.song)) c.performances.push(perf);
+				if (!c.performances.some((p) => p.dance === perf.dance && p.song === perf.song)) {
+					c.performances.push(perf);
+					if (/\d/.test(score)) (c.judges ??= []).push(score);
+				}
+				if (members.length === 1 && result) c.result = result;
 				if (members.length === 1 && /eliminat|withdr/i.test(result) && !wentHome.includes(m.id)) wentHome.push(m.id);
 			}
 		}
@@ -281,7 +287,7 @@ function extractWeek(sec, match, { season, scores }) {
  * @returns {{ cast, weeks: {week, night, status: 'ready'|'upcoming'|'error', aired?: boolean, couples?: number, error?: string}[], episodes: Record<number, object> }}
  *   episodes holds the full ballot for every 'ready' week.
  */
-export function parseSeason(wikitext, season, { source, scores = false } = {}) {
+export function parseSeason(wikitext, season, { source } = {}) {
 	wikitext = stripComments(wikitext);
 	const cast = parseCast(wikitext);
 	const match = coupleMatcher(cast);
@@ -290,7 +296,7 @@ export function parseSeason(wikitext, season, { source, scores = false } = {}) {
 	for (const sec of weekSections(wikitext)) {
 		if (weeks.some((w) => w.week === sec.week)) continue;
 		try {
-			const ep = extractWeek(sec, match, { season, scores });
+			const ep = extractWeek(sec, match, { season });
 			if (!ep.couples.length) { weeks.push({ week: sec.week, night: sec.night, status: 'upcoming' }); continue; }
 			episodes[sec.week] = source ? { ...ep, source } : ep;
 			weeks.push({ week: sec.week, night: sec.night, status: 'ready', aired: ep.aired, couples: ep.couples.length });
@@ -302,3 +308,29 @@ export function parseSeason(wikitext, season, { source, scores = false } = {}) {
 }
 
 export const sourceOf = (page) => ({ page: page.url, revid: page.revid, fetched: new Date().toISOString().slice(0, 10), license: LICENSE });
+
+/** Parse one week's section (fetched on its own during a live show), matching couples to a known line-up. */
+export function parseWeekSection(wikitext, season, week, couples) {
+	const sec = weekSections(stripComments(wikitext)).find((w) => w.week === week);
+	return sec ? extractWeek(sec, coupleMatcher(couples), { season }) : null;
+}
+
+/** Fetch one section of the season article (a few KB instead of the whole page). */
+export async function fetchSection(season, matchLine, { fetchImpl = fetch, index } = {}) {
+	const call = async (params) => {
+		const url = new URL(API);
+		url.search = new URLSearchParams({ action: 'parse', page: pageTitle(season), redirects: '1', format: 'json', formatversion: '2', ...params });
+		const res = await fetchImpl(url, { headers: { 'User-Agent': UA, 'Api-User-Agent': UA } });
+		if (!res.ok) throw new WikiError(`Wikipedia returned HTTP ${res.status}`);
+		const data = await res.json();
+		if (data.error) throw new WikiError(`Wikipedia: ${data.error.info}`, data.error.code === 'missingtitle' ? 'missing' : undefined);
+		return data.parse;
+	};
+	if (index == null) {
+		const { sections } = await call({ prop: 'sections' });
+		index = sections.find((s) => matchLine.test(clean(s.line)))?.index ?? null;
+		if (index == null) return null;
+	}
+	const parsed = await call({ prop: 'wikitext|revid', section: String(index) });
+	return { index, revid: parsed.revid, wikitext: parsed.wikitext };
+}

@@ -43,5 +43,68 @@ const reset = await post(`/api/r/${code}/reset`, {}, hostToken);
 check('host resets round', reset.ok && (await reset.json()).total === 0);
 check('LAN API disabled on Cloudflare', (await get('/api/votes?device=abcdefgh')).status === 404);
 
+// ---- live updates over WebSocket ----
+const wsBase = B.replace(/^http/, 'ws');
+function openSocket(room, device) {
+	const ws = new WebSocket(`${wsBase}/api/r/${room}/live?device=${device}`);
+	const inbox = [];
+	const waiters = [];
+	ws.onmessage = (e) => {
+		if (e.data === 'pong') return inbox.push('pong');
+		const msg = JSON.parse(e.data);
+		inbox.push(msg);
+		for (const w of [...waiters]) if (w.test(msg)) { waiters.splice(waiters.indexOf(w), 1); w.resolve(msg); }
+	};
+	const next = (test, ms = 5000) =>
+		new Promise((resolve, reject) => {
+			const hit = inbox.find((m) => m !== 'pong' && test(m));
+			if (hit) return resolve(hit);
+			const w = { test, resolve };
+			waiters.push(w);
+			setTimeout(() => reject(new Error('timed out')), ms);
+		});
+	const opened = new Promise((resolve, reject) => { ws.onopen = resolve; ws.onerror = reject; });
+	return { ws, inbox, next, opened };
+}
+const live = await (await post('/api/rooms')).json();
+await post(`/api/r/${live.code}/episode`, { episode: 's34e06' }, live.hostToken);
+const a = openSocket(live.code, 'wsguest001');
+const h = openSocket(live.code, 'wshost0001');
+try {
+	await Promise.all([a.opened, h.opened]);
+	const first = await a.next((m) => m.episode === 's34e06');
+	check('socket gets state on connect', first.couples?.length === 10 && !first.couples.some((c) => c.judges || c.result));
+	check('plain GET on the live URL refused', (await get(`/api/r/${live.code}/live`)).status === 426);
+	await post(`/api/r/${live.code}/votes`, { device: 'wsguest001', coupleId: 'hoying', score: 7, name: 'Guest' });
+	const pushed = await h.next((m) => m.counts?.hoying === 1);
+	check('vote pushed to the other phone', pushed.revealed?.hoying === false && pushed.mine?.hoying == null);
+	await post(`/api/r/${live.code}/votes`, { device: 'wshost0001', coupleId: 'hoying', score: 9, name: 'Host' });
+	const shown = await a.next((m) => m.revealed?.hoying === true);
+	const hoying = shown.couples.find((c) => c.id === 'hoying');
+	const earle = shown.couples.find((c) => c.id === 'earle');
+	check('judges shown only after reveal', hoying.judgesTotal > 0 && !!hoying.result && !earle.judges, `hoying ${hoying.judges} ${hoying.result}`);
+	a.ws.send('ping');
+	await new Promise((r) => setTimeout(r, 500));
+	check('ping auto-answered', a.inbox.includes('pong'));
+	// A phone that hasn't voted counts as present only while connected.
+	const v = openSocket(live.code, 'wsviewer01');
+	await v.opened;
+	const withViewer = await a.next((m) => m.expected?.earle === 3);
+	v.ws.close();
+	const without = await a.next((m) => m.expected?.earle === 2).catch(() => null);
+	check('presence follows open connections', !!withViewer && !!without, `expected ${withViewer?.expected?.earle} -> ${without?.expected?.earle}`);
+	await post(`/api/r/${live.code}/episode`, { episode: 's35e09' }, live.hostToken);
+	const airing = await a.next((m) => m.episode === 's35e09');
+	check('airing episode is tracked live', airing.tracking === true);
+	await new Promise((r) => setTimeout(r, 6000)); // first check runs ~1 s after switching; Wikipedia takes a moment
+	const after = await (await get(`/api/r/${live.code}/votes?device=wsguest001`)).json();
+	check('room checks Wikipedia while phones watch', !!after.live?.checked, after.live ? `checked ${new Date(after.live.checked).toISOString()}` : 'not checked');
+} catch (e) {
+	check('websocket flow', false, e.message);
+} finally {
+	a.ws.close();
+	h.ws.close();
+}
+
 console.log(failed ? `\n${failed} check(s) failed` : '\nall checks passed');
 process.exit(failed ? 1 : 0);

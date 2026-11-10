@@ -3,7 +3,8 @@
  import PersonName from '#lib/PersonName.svelte';
 	import { getProfile } from '#lib/profile.svelte.js';
 	import { page } from '$app/state';
-	import { fetchVotes, votersFor, roomOf } from '#lib/api.js';
+	import { votersFor, roomOf } from '#lib/api.js';
+	import { subscribe } from '#lib/live.js';
 	const { room } = $derived(roomOf(page));
 
 	let data = $state({ counts: {}, avg: {}, tens: {}, sums: {}, ballots: [], total: 0, mine: null, couples: null, season: null });
@@ -15,14 +16,12 @@
 	const show = getProfile();
 	$effect(() => { if (data.info) show.season = data.info.season; });
 	onMount(() => {
-		const load = async () => { try { data = await fetchVotes(room); } catch {} };
-		load();
-		const t = setInterval(load, 2000);
-		return () => clearInterval(t);
+		return subscribe(room, (d) => (data = d));
 	});
 </script>
 
 <h2>Leaderboard <small>{data.season ? data.season + " · " : ""}{data.total} votes · live</small></h2>
+{#if data.tracking}<p class="tracking">Judges' scores appear here as Wikipedia gets them during the show, once your room has scored each couple.</p>{/if}
 <ol>
 	{#each ranked as c, i (c.id)}
 		{@const voters = votersFor(data.ballots, c.id)}
@@ -36,8 +35,9 @@
 					</div>
 					<div class="tags">
 						{#if c.dance}<span class="dance">{c.dance}</span>{/if}
-						{#if c.wentHome}<span class="gone">Went home</span>{/if}
+						{#if c.wentHome}<span class="gone">Went home</span>{:else if c.result && !/^safe$/i.test(c.result)}<span class="result">{c.result}</span>{/if}
 					</div>
+					{#if c.judges}<p class="judges"><b>Judges {c.judgesTotal}</b>{#if c.judges.length > 1 || /\(/.test(c.judges[0])}<small>{c.judges.join(' + ')}</small>{/if}</p>{/if}
 					{#if c.song}<span class="song">“{c.song}”{#if c.songFrom}<small>{c.songFrom}</small>{/if}</span>{/if}
 				</div>
 			</div>
@@ -50,6 +50,11 @@
 
 
 <style>
+ .tracking { margin: -0.4rem 1rem 1rem; text-align: center; color: #c9a86a; font-size: 0.8rem; }
+ .judges { margin: 0.45rem 0 0; display: flex; flex-wrap: wrap; align-items: baseline; gap: 0.4rem; color: #fff3c4; font-size: 0.85rem; }
+ .judges b { padding: 0.12rem 0.55rem; border-radius: 999px; background: #e9c75a; color: #1a0d05; font-size: 0.75rem; letter-spacing: 0.02em; }
+ .judges small { color: #c9b58f; font-size: 0.75rem; }
+ .result { display: inline-block; padding: 0.12rem 0.5rem; border-radius: 999px; border: 1px solid #c45a6a; color: #ffd6dc; font-size: 0.68rem; font-weight: 800; letter-spacing: 0.03em; text-transform: uppercase; }
  .song { display:block; margin-top:0.4rem; color:#f6ead0; font-size:0.82rem; line-height:1.4; overflow-wrap:anywhere; }
  .song small { display:block; color:#c9b58f; font-size:0.72rem; }
 	h2 { font-family: Georgia, serif; color: #e9c75a; text-align: center; margin: 0 0 1rem; }

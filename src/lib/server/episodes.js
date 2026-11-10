@@ -21,7 +21,10 @@ function toEpisode(data, status) {
 			// Multi-dance weeks join the styles with " · "; the card shows the first song.
 			dance: [first, ...more].map((p) => p.dance).filter(Boolean).join(' · '),
 			...(first?.song ? { song: first.song, songFrom: first.songFrom } : {}),
-			...(first?.notes ? { notes: first.notes } : {})
+			...(first?.notes ? { notes: first.notes } : {}),
+			// Spoilers: room.js strips these until a phone has seen the room's scores for the couple.
+			...(entry.judges ? { judges: entry.judges } : {}),
+			...(entry.result ? { result: entry.result } : {})
 		};
 	});
 	return { key: episodeKey(data.season, data.week), season: data.season, week: data.week, night: data.night, label: data.label, status, couples };

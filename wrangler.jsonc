@@ -2,7 +2,7 @@
 {
 	"$schema": "node_modules/wrangler/config-schema.json",
 	"name": "dwts-vote",
-	// Written by @sveltejs/adapter-cloudflare; scripts/cf-postbuild.mjs appends the RoomDO export.
+	// The adapter writes its worker here; scripts/cf-postbuild.mjs swaps in worker/entry.js, which wraps it.
 	"main": ".svelte-kit/cloudflare/_worker.js",
 	"compatibility_date": "2026-10-01",
 	"compatibility_flags": ["nodejs_compat"],

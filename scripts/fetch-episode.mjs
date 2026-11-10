@@ -12,7 +12,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { fetchSeasonPage, parseSeason, sourceOf, WikiError } from './lib/wiki.mjs';
+import { fetchSeasonPage, parseSeason, sourceOf, WikiError } from '../src/lib/server/wiki.js';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const OUT_DIR = path.join(ROOT, 'src/lib/episodes');

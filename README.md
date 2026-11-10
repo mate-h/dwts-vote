@@ -33,11 +33,15 @@ node scripts/smoke-rooms.mjs http://127.0.0.1:8787   # API smoke test against cf
 - `/` is the landing page: create a room or join one by code or link. LAN-only pages redirect there.
 - Creating a room returns a host token, which stays in the creator's browser (`localStorage`). The Durable Object stores only its SHA-256 hash. Requests carrying the token may change the episode and reset votes, and everyone else gets 403.
 - A new room starts on the newest episode, including a line-up announced for the next show. A room with no changes for 30 days deletes itself.
-- Config is in `wrangler.jsonc`. The adapter writes the worker to `.svelte-kit/cloudflare/_worker.js`, and `scripts/cf-postbuild.mjs` appends the `RoomDO` export.
+- **Live updates:** each phone keeps one WebSocket to its room (`/api/r/CODE/live`) while the page is visible, and the room pushes new state after every change. Sockets use Durable Object hibernation, so an idle room costs nothing and 20 phones over a 3-hour show come to a few hundred requests. If WebSockets are blocked, phones fall back to polling every 3 s.
+- **Judges' scores:** past episodes have them bundled. For an episode whose line-up was bundled before it aired, the room checks that week's Wikipedia section once a minute while phones are connected, and stops once every couple has a score and a result. A phone only sees a couple's judges' score and result after the room's own scores for that couple are revealed.
+- Config is in `wrangler.jsonc`. The adapter writes the worker to `.svelte-kit/cloudflare/_worker.js`, and `scripts/cf-postbuild.mjs` moves it to `_sveltekit.js` behind `worker/entry.js`, which routes WebSocket upgrades to rooms and exports `RoomDO`.
 
 ### Code layout
 
 - `src/lib/server/room.js`: all voting logic (`Room`) and the API actions (`handle`). Pure JS, shared by both modes.
+- `src/lib/server/live.js` + `wiki.js`: live judges' scores from Wikipedia, and the season parser shared with the fetch script.
+- `src/lib/live.js`: the phone side of live updates (WebSocket, polling fallback, pause while hidden).
 - `src/lib/server/episodes.js`: the bundled episode library (`s34e06` keys) and the `/api/catalog` list for the host picker.
 - `src/lib/server/store.js`: LAN mode, a single `Room` saved to `data/votes.json`.
 - `worker/room-do.js`: Cloudflare mode, a `Room` per Durable Object.
@@ -57,4 +61,4 @@ npm run fetch:episode -- --all                # re-download every season
 npm run build                                 # (or npm run cf:deploy) then restart the server
 ```
 
-The parser is in `scripts/lib/wiki.mjs`. Couples are matched to the season's cast table, and votes are keyed by the celebrity's last name. Photos and bios (`src/lib/profiles.js`) exist for season 34 only. Other seasons show initials.
+The parser is in `src/lib/server/wiki.js`. Couples are matched to the season's cast table, and votes are keyed by the celebrity's last name. Photos and bios (`src/lib/profiles.js`) exist for season 34 only. Other seasons show initials.

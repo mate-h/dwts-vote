@@ -3,6 +3,8 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { Room, handle } from './room.js';
+import { getEpisode } from './episodes.js';
+import { fetchLive, LIVE_INTERVAL_MS } from './live.js';
 
 const FILE = path.resolve(process.env.VOTES_FILE ?? 'data/votes.json');
 const DEFAULT_EPISODE = 's34e02';
@@ -17,7 +19,22 @@ function save() {
 	fs.renameSync(FILE + '.tmp', FILE);
 }
 
+// Judges' scores for an airing episode: checked at most once a minute, and only while phones are polling.
+let checking = false;
+function maybeCheckLive() {
+	const key = room.episode;
+	if (checking || !room.needsLive()) return;
+	if (Date.now() - (room.live[key]?.checked ?? 0) < LIVE_INTERVAL_MS) return;
+	checking = true;
+	const prev = room.live[key];
+	fetchLive(getEpisode(key), prev)
+		.then((next) => { room.setLive(key, next); save(); })
+		.catch((e) => { console.warn('live check failed:', e?.message ?? e); room.setLive(key, { ...prev, checked: Date.now() }); })
+		.finally(() => { checking = false; });
+}
+
 export function run(action, method, input) {
+	if (action === 'votes' && method === 'GET') maybeCheckLive();
 	const result = handle(room, action, method, input, { isHost: true });
 	if (result.changed) save();
 	return result;

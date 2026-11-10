@@ -2,6 +2,7 @@
 // Pure logic with no I/O and no Node/Vite-only APIs. The LAN server (store.js) and the Cloudflare
 // Durable Object (worker/room-do.js) both wrap it and persist room.toJSON() after every change.
 import { getEpisode, migrateKey, infoOf } from './episodes.js';
+import { wantsLive } from './live.js';
 
 // Simultaneous reveal: a couple's scores stay hidden until every expected player has locked it in.
 // Expected players = devices with the voter page open now (heartbeat within PRESENCE_MS) PLUS devices with any vote this episode.
@@ -27,12 +28,14 @@ export class Room {
 	episode; // key, e.g. "s34e06"
 	rounds = {};
 	votesByEpisode = {};
+	live = {}; // episode key -> latest judges' scores/results fetched during the broadcast (live.js)
 	lastSeen = new Map(); // device -> ms; in memory only
 
 	/** @param {any} saved  a previous toJSON() (or the pre-episodes LAN format), or null */
 	constructor(saved, defaultEpisode) {
 		this.episode = defaultEpisode;
 		if (!saved) return;
+		this.live = saved.live ?? {};
 		if (saved.store) {
 			const loaded = migrateKey(saved.episode);
 			this.episode = getEpisode(loaded) ? loaded : defaultEpisode;
@@ -51,7 +54,7 @@ export class Room {
 		const store = {};
 		const ids = new Set([...Object.keys(this.votesByEpisode), ...Object.keys(this.rounds)]);
 		for (const id of ids) store[id] = { round: this.rounds[id] ?? 'initial', votes: this.votesByEpisode[id] ?? {} };
-		return { episode: this.episode, store };
+		return { episode: this.episode, store, live: this.live };
 	}
 
 	activeCouples() {
@@ -60,6 +63,19 @@ export class Room {
 
 	ballots() {
 		return (this.votesByEpisode[this.episode] ??= {});
+	}
+
+	/** Should the current episode's judges' scores be polled from Wikipedia? */
+	needsLive() {
+		return wantsLive(getEpisode(this.episode), this.live[this.episode]);
+	}
+
+	setLive(key, data) {
+		this.live[key] = data;
+	}
+
+	leave(device) {
+		this.lastSeen.delete(device);
 	}
 
 	touch(device) {
@@ -113,13 +129,29 @@ export class Room {
 		}
 		const visible = all.filter((b) => revealed[b.coupleId] || own[b.coupleId] === b);
 		const ep = getEpisode(this.episode);
+		const live = this.live[this.episode];
+		// Judges' scores and results are spoilers: only sent for couples this phone has seen revealed.
+		const view = couples.map(({ judges, result, ...c }) => {
+			const l = live?.couples?.[c.id];
+			const j = l?.judges ?? judges;
+			const r = l?.result ?? result;
+			const show = revealed[c.id];
+			return {
+				...c,
+				wentHome: c.wentHome || !!live?.wentHome?.includes(c.id),
+				...(show && j ? { judges: j, judgesTotal: j.reduce((sum, t) => sum + (Number(/\d+/.exec(t)?.[0]) || 0), 0) } : {}),
+				...(show && r ? { result: r } : {})
+			};
+		});
 		return {
 			round: this.rounds[this.episode] ?? 'initial',
 			episode: this.episode,
 			info: infoOf(ep),
 			season: ep?.label ?? '', // display label (kept for older clients)
 			played: this.played(),
-			couples,
+			live: live ? { checked: live.checked, final: !!live.final } : null,
+			tracking: this.needsLive(),
+			couples: view,
 			counts,
 			avg,
 			tens,

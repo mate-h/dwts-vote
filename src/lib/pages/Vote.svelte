@@ -3,7 +3,8 @@
  import { page } from '$app/state';
  import { goto } from '$app/navigation';
  import { getProfile } from '#lib/profile.svelte.js';
- import { deviceId, deviceName, fetchVotes, votersFor, roomOf, callApi } from '#lib/api.js';
+ import { deviceId, deviceName, votersFor, roomOf, callApi } from '#lib/api.js';
+ import { subscribe } from '#lib/live.js';
  import ScorePaddle from '#lib/ScorePaddle.svelte';
  import PersonName from '#lib/PersonName.svelte';
  import Lineup from '#lib/Lineup.svelte';
@@ -47,18 +48,12 @@
    const cached = JSON.parse(localStorage.getItem('ballot-scores:' + (room ? room + ':' : '') + deviceId()) || 'null');
    if (cached) { data = {...data,round:cached.round,mine:cached.mine}; presentingId = cached.currentId ?? null; }
   } catch {}
-  let active = true;
-  const load = async () => {
-   if (busy) return;
-   const version = revision;
-   try {
-    const d = await fetchVotes(room);
-    if (active && !busy && version === revision) { remember(d); message = ''; }
-   } catch { if (active) message = 'Connection lost. Saved scores are kept; reconnect to continue.'; }
-  };
-  load();
-  const t = setInterval(load,3000);
-  return () => { active = false; clearInterval(t); };
+  // Live state: pushed by the room (or polled). Ignored while this phone is saving a vote, whose own response is fresher.
+  let version = revision;
+  return subscribe(room, (d) => {
+   if (busy || version !== revision) { version = revision; return; }
+   remember(d);
+  }, { onError: (e) => { message = e ? 'Connection lost. Saved scores are kept; reconnect to continue.' : message.startsWith('Connection lost') ? '' : message; } });
  });
  async function vote(id, score) {
   busy = true; if (!history) presentingId = id; revision++;
@@ -180,6 +175,7 @@
     {#if picked}<p class="waiting" role="status">Waiting for everyone to lock in… <span>{data.counts[c.id] ?? 0} of {data.expected?.[c.id] ?? 0} locked in</span></p>{/if}
    {:else if voters.length}<div class="voters">{#each voters as v, i (i)}<span class="chip">{v.name}{#if v.score} — {v.score}{/if}</span>{/each}</div>
    {/if}
+   {#if c.judges}<p class="judges"><b>Judges {c.judgesTotal}</b> {c.judges.join(' + ')}</p>{/if}
    {#if picked}<p class="yours">Voted {data.mine[c.id]}</p>{/if}
    {#if !history && !confirmed}
     <button class={['vote-action', { awaiting: chosen == null }]} disabled={busy || chosen == null} onclick={() => vote(c.id,chosen)}>Lock In</button>
@@ -194,6 +190,8 @@
 </ul>
 {/if}
 <style>
+ .judges { grid-column:1 / -1; margin:0; color:#c9b58f; font-size:0.8rem; }
+ .judges b { padding:0.12rem 0.55rem; margin-right:0.3rem; border-radius:999px; background:#e9c75a; color:#1a0d05; font-size:0.75rem; }
  .live { display:inline-block; margin:0.4rem 0 0; padding:0.15rem 0.6rem; border-radius:999px; border:1px solid #e9c75a; color:#e9c75a; font-size:0.7rem; font-weight:800; letter-spacing:0.08em; text-transform:uppercase; }
  .song { color:#f6ead0; font-size:0.88rem; line-height:1.4; overflow-wrap:anywhere; }
  .song small { display:block; color:#c9b58f; font-size:0.75rem; }
