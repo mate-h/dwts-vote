@@ -1,7 +1,7 @@
 // One voting room: per-episode ballots, rounds and the live "simultaneous reveal" state.
 // Pure logic with no I/O and no Node/Vite-only APIs. The LAN server (store.js) and the Cloudflare
 // Durable Object (worker/room-do.js) both wrap it and persist room.toJSON() after every change.
-import { getEpisode, episodeList } from '../couples.js';
+import { getEpisode, migrateKey, infoOf } from './episodes.js';
 
 // Simultaneous reveal: a couple's scores stay hidden until every expected player has locked it in.
 // Expected players = devices with the voter page open now (heartbeat within PRESENCE_MS) PLUS devices with any vote this episode.
@@ -17,13 +17,14 @@ function normalizeVotes(rawVotes, couples) {
 	for (const [device, value] of Object.entries(rawVotes ?? {})) {
 		const records = typeof value === 'string' ? [{ coupleId: value, score: null }] : value.coupleId ? [value] : Object.values(value);
 		out[device] = {};
-		for (const v of records) if (couples.some((c) => c.id === v.coupleId)) out[device][v.coupleId] = { ...v, name: cleanName(v.name) };
+		// Unknown episode (no longer bundled): keep its votes as they are rather than dropping them.
+		for (const v of records) if (!couples || couples.some((c) => c.id === v.coupleId)) out[device][v.coupleId] = { ...v, name: cleanName(v.name) };
 	}
 	return out;
 }
 
 export class Room {
-	episode;
+	episode; // key, e.g. "s34e06"
 	rounds = {};
 	votesByEpisode = {};
 	lastSeen = new Map(); // device -> ms; in memory only
@@ -33,14 +34,12 @@ export class Room {
 		this.episode = defaultEpisode;
 		if (!saved) return;
 		if (saved.store) {
-			const loaded = Number(saved.episode);
+			const loaded = migrateKey(saved.episode);
 			this.episode = getEpisode(loaded) ? loaded : defaultEpisode;
 			for (const [ep, data] of Object.entries(saved.store)) {
-				const id = Number(ep);
-				const meta = getEpisode(id);
-				if (!meta) continue;
-				this.rounds[id] = data.round ?? 'initial';
-				this.votesByEpisode[id] = normalizeVotes(data.votes, meta.couples);
+				const key = migrateKey(ep);
+				this.rounds[key] = data.round ?? 'initial';
+				this.votesByEpisode[key] = normalizeVotes(data.votes, getEpisode(key)?.couples ?? null);
 			}
 		} else {
 			this.rounds[defaultEpisode] = saved.round ?? 'initial';
@@ -50,7 +49,7 @@ export class Room {
 
 	toJSON() {
 		const store = {};
-		const ids = new Set([...Object.keys(this.votesByEpisode), ...Object.keys(this.rounds)].map(Number));
+		const ids = new Set([...Object.keys(this.votesByEpisode), ...Object.keys(this.rounds)]);
 		for (const id of ids) store[id] = { round: this.rounds[id] ?? 'initial', votes: this.votesByEpisode[id] ?? {} };
 		return { episode: this.episode, store };
 	}
@@ -113,11 +112,13 @@ export class Room {
 			if (!revealed[id]) { sums[id] = null; avg[id] = null; tens[id] = null; }
 		}
 		const visible = all.filter((b) => revealed[b.coupleId] || own[b.coupleId] === b);
+		const ep = getEpisode(this.episode);
 		return {
 			round: this.rounds[this.episode] ?? 'initial',
 			episode: this.episode,
-			season: getEpisode(this.episode)?.label ?? '',
-			episodes: episodeList(),
+			info: infoOf(ep),
+			season: ep?.label ?? '', // display label (kept for older clients)
+			played: this.played(),
 			couples,
 			counts,
 			avg,
@@ -130,14 +131,24 @@ export class Room {
 		};
 	}
 
+	/** Votes cast per episode in this room, for the host's episode picker. */
+	played() {
+		const out = {};
+		for (const [key, ballots] of Object.entries(this.votesByEpisode)) {
+			const n = Object.values(ballots).reduce((sum, v) => sum + Object.keys(v).length, 0);
+			if (n) out[key] = n;
+		}
+		return out;
+	}
+
 	mine(device) {
 		return Object.fromEntries(Object.values(this.ballots()[device] ?? {}).map(({ coupleId, score }) => [coupleId, score]));
 	}
 
-	setEpisode(id) {
-		const meta = getEpisode(id);
+	setEpisode(key) {
+		const meta = getEpisode(key);
 		if (!meta) return false;
-		this.episode = meta.id;
+		this.episode = meta.key;
 		this.votesByEpisode[this.episode] ??= {};
 		this.rounds[this.episode] ??= 'initial';
 		return true;

@@ -3,7 +3,8 @@
  import ProfileModal from '#lib/ProfileModal.svelte';
  import { setProfile, ProfileController } from '#lib/profile.svelte.js';
  import { roomOf, hostToken } from '#lib/api.js';
- setProfile(new ProfileController());
+ const show = new ProfileController();
+ setProfile(show);
 	let { children, data } = $props();
 	const { room, base } = $derived(roomOf(page));
 	let isHost = $state(false);
@@ -24,7 +25,7 @@
 <div class="sparkles" aria-hidden="true"></div>
 <header>
 	<h1><img src="/dwts-logo.png" alt="Dancing with the Stars" width="2400" height="1117" /></h1>
-	<p class="sub">Season 34{#if room}{' · '}<a class="room" href={base + '/host'} title="Invite friends">Room {room}</a>{/if}</p>
+	<p class="sub">{show.season ? 'Season ' + show.season : 'Star Ballot'}{#if room}{' · '}<a class="room" href={base + '/host'} title="Invite friends">Room {room}</a>{/if}</p>
 </header>
 <main>{@render children()}</main>
 <ProfileModal />

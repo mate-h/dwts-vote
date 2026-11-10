@@ -3,7 +3,7 @@
 // Appended to the SvelteKit worker by scripts/cf-postbuild.mjs; bound as env.ROOMS in wrangler.jsonc.
 import { DurableObject } from 'cloudflare:workers';
 import { Room, handle } from '../src/lib/server/room.js';
-import { LATEST_EPISODE } from '../src/lib/couples.js';
+import { LATEST } from '../src/lib/server/episodes.js';
 
 const IDLE_TTL_MS = 30 * 24 * 60 * 60 * 1000; // rooms are deleted after 30 days without a change
 
@@ -17,7 +17,7 @@ export class RoomDO extends DurableObject {
 		super(ctx, env);
 		ctx.blockConcurrencyWhile(async () => {
 			this.meta = (await ctx.storage.get('meta')) ?? null; // { code, hostHash, created }
-			this.room = new Room((await ctx.storage.get('state')) ?? null, LATEST_EPISODE);
+			this.room = new Room((await ctx.storage.get('state')) ?? null, LATEST);
 		});
 	}
 
@@ -30,7 +30,7 @@ export class RoomDO extends DurableObject {
 	async init(code, hostToken) {
 		if (this.meta) return false;
 		this.meta = { code, hostHash: await sha256(hostToken), created: Date.now() };
-		this.room = new Room(null, LATEST_EPISODE);
+		this.room = new Room(null, LATEST);
 		await this.persist();
 		return true;
 	}
@@ -54,6 +54,6 @@ export class RoomDO extends DurableObject {
 	async alarm() {
 		await this.ctx.storage.deleteAll();
 		this.meta = null;
-		this.room = new Room(null, LATEST_EPISODE);
+		this.room = new Room(null, LATEST);
 	}
 }

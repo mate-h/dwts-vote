@@ -1,17 +1,19 @@
 <script>
 	import { onMount } from 'svelte';
  import PersonName from '#lib/PersonName.svelte';
-	import { couples as fallbackCouples } from '#lib/couples.js';
+	import { getProfile } from '#lib/profile.svelte.js';
 	import { page } from '$app/state';
 	import { fetchVotes, votersFor, roomOf } from '#lib/api.js';
 	const { room } = $derived(roomOf(page));
 
 	let data = $state({ counts: {}, avg: {}, tens: {}, sums: {}, ballots: [], total: 0, mine: null, couples: null, season: null });
 	const ranked = $derived(
-		(data.couples ?? fallbackCouples)
+		(data.couples ?? [])
 			.map((c) => ({ ...c, n: data.counts[c.id] ?? 0, sum: data.sums[c.id] ?? 0, hidden: data.revealed ? !data.revealed[c.id] : false }))
 			.sort((a, b) => b.sum - a.sum || b.n - a.n || a.order - b.order)
 	);
+	const show = getProfile();
+	$effect(() => { if (data.info) show.season = data.info.season; });
 	onMount(() => {
 		const load = async () => { try { data = await fetchVotes(room); } catch {} };
 		load();

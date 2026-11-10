@@ -2,7 +2,7 @@
  import { onMount } from 'svelte';
  import { page } from '$app/state';
  import { goto } from '$app/navigation';
- import { couples as fallbackCouples, getEpisode } from '#lib/couples.js';
+ import { getProfile } from '#lib/profile.svelte.js';
  import { deviceId, deviceName, fetchVotes, votersFor, roomOf, callApi } from '#lib/api.js';
  import ScorePaddle from '#lib/ScorePaddle.svelte';
  import PersonName from '#lib/PersonName.svelte';
@@ -11,7 +11,9 @@
  import { playPick, playLockIn, playNext } from '#lib/sounds.js';
  const scores = [1,2,3,4,5,6,7,8,9,10];
  const { room, base } = $derived(roomOf(page));
- let data = $state({counts:{},avg:{},ballots:[],mine:{},round:null,episode:null,season:null,couples:null});
+ let data = $state({counts:{},avg:{},ballots:[],mine:{},round:null,episode:null,info:null,season:null,couples:null});
+ const show = getProfile();
+ $effect(() => { if (data.info) show.season = data.info.season; });
  let myName = $state('');
  let busy = $state(false);
  let presentingId = $state(null);
@@ -24,10 +26,9 @@
  let draftName = $state('');
  let message = $state('');
  let revision = 0;
- const couples = $derived(data.couples ?? fallbackCouples);
- const activeEp = $derived(getEpisode(data.episode) ?? getEpisode(2));
-const night = $derived(activeEp?.night ?? '');
-const epNum = $derived(activeEp?.id ?? 2);
+ const couples = $derived(data.couples ?? []);
+ const night = $derived(data.info?.night ?? '');
+ const epNum = $derived(data.info?.week ?? '');
  const ordered = $derived([...couples].filter(c => !c.out).sort((a,b) => a.order-b.order));
  const current = $derived(ordered.find(c => data.mine?.[c.id] == null));
  const completed = $derived(ordered.filter(c => data.mine?.[c.id] != null).length);
@@ -112,7 +113,8 @@ const epNum = $derived(activeEp?.id ?? 2);
 </script>
 
 <div class="intro">
- <p class="episode"><span>Episode {epNum}</span> {night}</p>
+ <p class="episode"><span>{#if data.info}Episode {epNum}{:else}&nbsp;{/if}</span> {night}</p>
+ {#if data.info?.status === 'lineup'}<p class="live">Line-up announced · airs next</p>{/if}
  {#if done}
   <p class="lede">Round complete</p>
  {:else if lineup}
@@ -192,6 +194,7 @@ const epNum = $derived(activeEp?.id ?? 2);
 </ul>
 {/if}
 <style>
+ .live { display:inline-block; margin:0.4rem 0 0; padding:0.15rem 0.6rem; border-radius:999px; border:1px solid #e9c75a; color:#e9c75a; font-size:0.7rem; font-weight:800; letter-spacing:0.08em; text-transform:uppercase; }
  .song { color:#f6ead0; font-size:0.88rem; line-height:1.4; overflow-wrap:anywhere; }
  .song small { display:block; color:#c9b58f; font-size:0.75rem; }
  .saved-paddle { grid-column:1 / -1; width:120px; justify-self:center; margin:0.7rem 0 0.3rem; transform-origin:50% 72%; }

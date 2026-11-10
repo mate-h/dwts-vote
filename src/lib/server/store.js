@@ -5,7 +5,7 @@ import path from 'node:path';
 import { Room, handle } from './room.js';
 
 const FILE = path.resolve(process.env.VOTES_FILE ?? 'data/votes.json');
-const DEFAULT_EPISODE = 2;
+const DEFAULT_EPISODE = 's34e02';
 
 let saved = null;
 try { saved = JSON.parse(fs.readFileSync(FILE, 'utf8')); } catch (e) { if (e.code !== 'ENOENT') throw e; }

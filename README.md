@@ -32,28 +32,29 @@ node scripts/smoke-rooms.mjs http://127.0.0.1:8787   # API smoke test against cf
 
 - `/` is the landing page: create a room or join one by code or link. LAN-only pages redirect there.
 - Creating a room returns a host token, which stays in the creator's browser (`localStorage`). The Durable Object stores only its SHA-256 hash. Requests carrying the token may change the episode and reset votes, and everyone else gets 403.
-- A new room starts on the latest episode. A room with no changes for 30 days deletes itself.
+- A new room starts on the newest episode, including a line-up announced for the next show. A room with no changes for 30 days deletes itself.
 - Config is in `wrangler.jsonc`. The adapter writes the worker to `.svelte-kit/cloudflare/_worker.js`, and `scripts/cf-postbuild.mjs` appends the `RoomDO` export.
 
 ### Code layout
 
 - `src/lib/server/room.js`: all voting logic (`Room`) and the API actions (`handle`). Pure JS, shared by both modes.
+- `src/lib/server/episodes.js`: the bundled episode library (`s34e06` keys) and the `/api/catalog` list for the host picker.
 - `src/lib/server/store.js`: LAN mode, a single `Room` saved to `data/votes.json`.
 - `worker/room-do.js`: Cloudflare mode, a `Room` per Durable Object.
 - `src/lib/server/backend.js`: picks the mode from the `ROOMS` binding (via `cloudflare:workers`, which is stubbed in the node build).
 - `src/lib/pages/*`: the Vote / Results / Host / Landing pages, mounted at `/…` (LAN) and `/r/[room]/…` (rooms).
 
-## Adding an episode
+## Episodes
 
-Cast: DWTS Season 34 (fall 2025), in `src/lib/cast.js`. Episodes 2–5 are in `src/lib/episodes/s34eNN.json`.
+Every season of the US show (1–35, about 350 episodes) is bundled, so hosts can pick any episode from the Host page: a season strip, then that season's episodes. Each one is marked *Scoring now*, *Airs next* (line-up announced, not aired yet) or with the number of votes it already has in this room. The data stays on the server, and phones only get the current episode.
 
-Episode data (performance order, dance, song, artist or theme, who went home) comes from the season's Wikipedia article:
+The data comes from each season's Wikipedia article: performance order, dance, song, artist or theme, and who went home. It's stored in `src/lib/episodes/sNN.json`. To pick up new weeks of the season on air, refresh it and redeploy:
 
 ```sh
-npm run fetch:episode -- --week 6            # writes src/lib/episodes/s34e06.json + index.js
-npm run fetch:episode -- --week 6 --dry-run  # print only
-npm run fetch:episode -- --week 2-6          # several weeks; --all for every week
-npm run build                                # (or cf:deploy) then restart the server
+npm run fetch:episode -- --season 35          # refresh one season
+npm run fetch:episode -- --season 35 --list   # show each week's status, write nothing
+npm run fetch:episode -- --all                # re-download every season
+npm run build                                 # (or npm run cf:deploy) then restart the server
 ```
 
-Every episode file for the season shows up in the episode picker. If a couple isn't recognised, add it to `src/lib/cast.js`.
+The parser is in `scripts/lib/wiki.mjs`. Couples are matched to the season's cast table, and votes are keyed by the celebrity's last name. Photos and bios (`src/lib/profiles.js`) exist for season 34 only. Other seasons show initials.

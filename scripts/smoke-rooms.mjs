@@ -25,10 +25,10 @@ check('guest sees ballot', guest.couples?.length > 0 && guest.isHost === false, 
 const host = await (await get(`/api/r/${code}/votes?device=hostdevice1&seen=1`, hostToken)).json();
 check('host token recognised', host.isHost === true);
 
-check('guest cannot switch episode', (await post(`/api/r/${code}/episode`, { episode: 3 })).status === 403);
+check('guest cannot switch episode', (await post(`/api/r/${code}/episode`, { episode: 's34e03' })).status === 403);
 check('wrong token cannot reset', (await post(`/api/r/${code}/reset`, {}, 'nope')).status === 403);
-const switched = await post(`/api/r/${code}/episode`, { episode: 3 }, hostToken);
-check('host switches episode', switched.ok && (await switched.json()).episode === 3);
+const switched = await post(`/api/r/${code}/episode`, { episode: 's34e03' }, hostToken);
+check('host switches episode', switched.ok && (await switched.json()).episode === 's34e03');
 
 const v1 = await (await post(`/api/r/${code}/votes`, { device: 'guestdevice1', coupleId: 'affleck', score: 8, name: 'Guest' })).json();
 check('guest vote hidden until host votes', v1.mine?.affleck === 8 && v1.revealed?.affleck === false);
