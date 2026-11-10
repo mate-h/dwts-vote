@@ -3,7 +3,8 @@
  import { getProfile } from '#lib/profile.svelte.js';
  let { name, pro = false } = $props();
  const controller = getProfile();
- const person = $derived(profiles[name]);
+ // Bios and photos were written for season 34; other seasons show initials.
+ const person = $derived(controller.season === 34 ? profiles[name] : null);
 </script>
 
 <button type="button" class={{ pro }} aria-haspopup="dialog" aria-label={`About ${name}`} onclick={(event) => { event.stopPropagation(); if (person) controller.open(person); }}>

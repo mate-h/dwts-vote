@@ -3,8 +3,32 @@ export function deviceId() {
 	if (!id) { id = globalThis.crypto?.randomUUID?.() ?? String(Math.random()).slice(2) + Date.now(); localStorage.setItem('ballot-device', id); }
 	return id;
 }
-export async function fetchVotes() {
-	const r = await fetch('/api/votes?device=' + encodeURIComponent(deviceId()) + (document.hidden ? '' : '&seen=1'), { cache: 'no-store' });
+// Room context. `room` is the room code in the Cloudflare deployment (/r/CODE/...), null in LAN party mode.
+// `base` prefixes page links, and API calls go to /api/... (LAN) or /api/r/CODE/... (room).
+export function roomOf(page) {
+	const room = page.params.room ? String(page.params.room).toUpperCase() : null;
+	return { room, base: room ? '/r/' + room : '' };
+}
+const hostKey = (room) => 'room-host:' + room;
+export function hostToken(room) {
+	if (!room) return '';
+	try { return localStorage.getItem(hostKey(room)) ?? ''; } catch { return ''; }
+}
+export function saveHostToken(room, token) {
+	try { localStorage.setItem(hostKey(room), token); } catch {}
+}
+export async function callApi(room, action, body) {
+	const url = (room ? '/api/r/' + room : '/api') + '/' + action;
+	const headers = { 'content-type': 'application/json' };
+	const token = hostToken(room);
+	if (token) headers['x-host-token'] = token;
+	return fetch(url, { method: 'POST', headers, body: JSON.stringify(body ?? {}) });
+}
+export async function fetchVotes(room = null) {
+	const url = (room ? '/api/r/' + room : '/api') + '/votes?device=' + encodeURIComponent(deviceId()) + (document.hidden ? '' : '&seen=1');
+	const token = hostToken(room);
+	const r = await fetch(url, { cache: 'no-store', headers: token ? { 'x-host-token': token } : {} });
+	if (!r.ok) throw Object.assign(new Error('votes ' + r.status), { status: r.status });
 	return r.json();
 }
 function parseUA(ua) {

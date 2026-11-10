@@ -7,7 +7,7 @@
 </script>
 
 {#snippet avatar(name)}
- {@const person = profiles[name]}
+ {@const person = controller.season === 34 ? profiles[name] : null}
  <button type="button" class="face" aria-haspopup="dialog" aria-label={`About ${name}`} onclick={() => { if (person) controller.open(person); }}>
   {#if person?.photo}<img src={person.photo} alt="" width="64" height="64" loading="lazy" />{:else}<span class="mono" aria-hidden="true">{initials(name)}</span>{/if}
   <span class="cap">{first(name)}</span>
