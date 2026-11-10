@@ -1,6 +1,6 @@
-import { catalog } from '#lib/server/episodes.js';
+import { catalog, nextShow } from '#lib/server/episodes.js';
 
-// Public and identical for every room: lets browsers and Cloudflare's edge cache it.
+// Public and identical for every room. `next` is the upcoming live show (for the countdown).
 export function GET() {
-	return new Response(JSON.stringify({ seasons: catalog() }), { headers: { 'content-type': 'application/json', 'cache-control': 'public, max-age=300' } });
+	return new Response(JSON.stringify({ next: nextShow(), seasons: catalog() }), { headers: { 'content-type': 'application/json', 'cache-control': 'public, max-age=60' } });
 }

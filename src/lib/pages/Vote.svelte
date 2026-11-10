@@ -3,6 +3,7 @@
  import { page } from '$app/state';
  import { goto } from '$app/navigation';
  import { getProfile } from '#lib/profile.svelte.js';
+ import Countdown from '#lib/Countdown.svelte';
  import { deviceId, deviceName, votersFor, roomOf, callApi } from '#lib/api.js';
  import { subscribe } from '#lib/live.js';
  import ScorePaddle from '#lib/ScorePaddle.svelte';
@@ -109,7 +110,8 @@
 
 <div class="intro">
  <p class="episode"><span>{#if data.info}Episode {epNum}{:else}&nbsp;{/if}</span> {night}</p>
- {#if data.info?.status === 'lineup'}<p class="live">Line-up announced · airs next</p>{/if}
+ {#if data.info?.airsAt && Date.parse(data.info.airsAt) > Date.now() - 2 * 3600_000}<div class="countdown-row"><Countdown airsAt={data.info.airsAt} compact /></div>
+ {:else if data.info?.status === 'lineup'}<p class="live">Line-up announced · airs next</p>{/if}
  {#if done}
   <p class="lede">Round complete</p>
  {:else if lineup}
@@ -192,6 +194,7 @@
 <style>
  .judges { grid-column:1 / -1; margin:0; color:#c9b58f; font-size:0.8rem; }
  .judges b { padding:0.12rem 0.55rem; margin-right:0.3rem; border-radius:999px; background:#e9c75a; color:#1a0d05; font-size:0.75rem; }
+ .countdown-row { margin:0.5rem 0 0; }
  .live { display:inline-block; margin:0.4rem 0 0; padding:0.15rem 0.6rem; border-radius:999px; border:1px solid #e9c75a; color:#e9c75a; font-size:0.7rem; font-weight:800; letter-spacing:0.08em; text-transform:uppercase; }
  .song { color:#f6ead0; font-size:0.88rem; line-height:1.4; overflow-wrap:anywhere; }
  .song small { display:block; color:#c9b58f; font-size:0.75rem; }

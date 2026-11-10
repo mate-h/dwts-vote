@@ -4,6 +4,7 @@
 	import { fetchVotes, callApi, roomOf } from '#lib/api.js';
 	import { getProfile } from '#lib/profile.svelte.js';
 	import ShareRoom from '#lib/ShareRoom.svelte';
+	import Countdown from '#lib/Countdown.svelte';
 
 	const { room } = $derived(roomOf(page));
 	const show = getProfile();
@@ -56,9 +57,10 @@
 		if (r.ok) await refresh();
 	}
 
+	const airDate = (w) => (w.airsAt ? new Date(w.airsAt).toLocaleString(undefined, { weekday: 'short', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }) : '');
 	function meta(w) {
-		if (w.status === 'upcoming') return 'Not aired yet';
-		if (w.status === 'lineup') return `Line-up announced · ${w.couples} couples`;
+		if (w.status === 'upcoming') return w.airsAt ? `Airs ${airDate(w)}` : 'Not aired yet';
+		if (w.status === 'lineup') return `${w.airsAt ? `Airs ${airDate(w)}` : 'Line-up announced'} · ${w.couples} couples`;
 		return `${w.couples} couples`;
 	}
 </script>
@@ -76,6 +78,7 @@
 		{#if current}
 			<p class="title">{current.night || `Episode ${current.week}`}</p>
 			<p class="sub">Season {current.season} · Episode {current.week}{#if current.status === 'lineup'}{' · '}<span class="tag">Airs next</span>{/if}</p>
+			{#if current.airsAt}<div class="cd"><Countdown airsAt={current.airsAt} /></div>{/if}
 		{:else}
 			<p class="title">…</p>
 		{/if}
@@ -141,6 +144,7 @@
 	.title { margin: 0.25rem 0 0; font-family: Georgia, serif; font-size: 1.35rem; color: #fff3c4; }
 	.sub { margin: 0.2rem 0 0; color: #d8c39a; font-size: 0.85rem; }
 	.tag { color: #e9c75a; font-weight: 700; }
+	.cd { margin-top: 0.7rem; }
 	.reset { margin-top: 0.9rem; min-height: 52px; width: 100%; border-radius: 999px; border: 1px solid #e9c75a; background: #7a1530; color: #fff3c4; font-size: 1.05rem; font-weight: 700; }
 
 	/* Season strip: horizontally scrollable chips, newest first */

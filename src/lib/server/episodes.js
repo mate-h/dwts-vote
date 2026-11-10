@@ -7,7 +7,7 @@ export const episodeKey = (season, week) => `s${season}e${String(week).padStart(
 // Before multi-season support, LAN/room state stored season 34 episodes by week number.
 export const migrateKey = (k) => (/^\d+$/.test(String(k)) ? episodeKey(34, Number(k)) : String(k));
 
-function toEpisode(data, status) {
+function toEpisode(data, status, airsAt) {
 	const home = new Set(data.wentHome ?? []);
 	const couples = data.couples.map((entry, i) => {
 		const [first, ...more] = entry.performances;
@@ -27,7 +27,7 @@ function toEpisode(data, status) {
 			...(entry.result ? { result: entry.result } : {})
 		};
 	});
-	return { key: episodeKey(data.season, data.week), season: data.season, week: data.week, night: data.night, label: data.label, status, couples };
+	return { key: episodeKey(data.season, data.week), season: data.season, week: data.week, night: data.night, label: data.label, status, airsAt, couples };
 }
 
 const EPISODES = {};
@@ -36,8 +36,8 @@ for (const s of [...seasons].sort((a, b) => b.season - a.season)) {
 	const byWeek = Object.fromEntries(s.episodes.map((e) => [e.week, e]));
 	const weeks = s.weeks.map((w) => {
 		const ep = byWeek[w.week];
-		if (ep) EPISODES[episodeKey(s.season, w.week)] = toEpisode(ep, w.status);
-		return { key: ep ? episodeKey(s.season, w.week) : null, week: w.week, night: w.night, status: w.status, couples: ep?.couples.length ?? 0 };
+		if (ep) EPISODES[episodeKey(s.season, w.week)] = toEpisode(ep, w.status, w.airsAt ?? null);
+		return { key: ep ? episodeKey(s.season, w.week) : null, week: w.week, night: w.night, status: w.status, airsAt: w.airsAt ?? null, couples: ep?.couples.length ?? 0 };
 	});
 	CATALOG.push({ season: s.season, source: s.source?.page, fetched: s.source?.fetched, weeks });
 }
@@ -54,4 +54,17 @@ export const LATEST = (() => {
 })();
 
 /** The episode fields sent with every votes response. */
-export const infoOf = (ep) => (ep ? { key: ep.key, season: ep.season, week: ep.week, night: ep.night, label: ep.label, status: ep.status } : null);
+export const infoOf = (ep) => (ep ? { key: ep.key, season: ep.season, week: ep.week, night: ep.night, label: ep.label, status: ep.status, airsAt: ep.airsAt } : null);
+
+const SHOW_MS = 2 * 60 * 60 * 1000; // a live episode runs two hours
+
+/** The next live show (or the one on air now), for the countdown. Null between seasons. */
+export function nextShow(now = Date.now()) {
+	let best = null;
+	for (const s of CATALOG)
+		for (const w of s.weeks) {
+			const t = w.airsAt ? Date.parse(w.airsAt) : NaN;
+			if (t + SHOW_MS > now && (!best || t < Date.parse(best.airsAt))) best = { key: w.key, season: s.season, week: w.week, night: w.night, airsAt: w.airsAt, endsAt: new Date(t + SHOW_MS).toISOString() };
+		}
+	return best;
+}

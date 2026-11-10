@@ -12,7 +12,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { fetchSeasonPage, parseSeason, sourceOf, WikiError } from '../src/lib/server/wiki.js';
+import { fetchSeasonPage, parseSeason, sourceOf, showTime, WikiError } from '../src/lib/server/wiki.js';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const OUT_DIR = path.join(ROOT, 'src/lib/episodes');
@@ -56,14 +56,15 @@ for (const season of seasons) {
 	const summary = `season ${season}: ${ready.filter((w) => w.aired).length}/${weeks.length} weeks aired${ready.some((w) => !w.aired) ? `, line-up out for week ${ready.filter((w) => !w.aired).map((w) => w.week).join(', ')}` : ''}${weeks.some((w) => w.status === 'error') ? ' (errors: ' + weeks.filter((w) => w.error).map((w) => `week ${w.week}: ${w.error}`).join('; ') + ')' : ''}`;
 	if (flag('list')) {
 		console.log(`${summary} — ${page.title}`);
-		for (const w of weeks) console.log(`  week ${w.week}: ${w.night || '(no theme)'} — ${w.status === 'ready' ? w.couples + ' couples' + (w.aired ? '' : ' (line-up, not aired)') : w.status}`);
+		for (const w of weeks) console.log(`  week ${w.week}: ${w.night || '(no theme)'}${w.airDate ? ' (' + w.airDate + ')' : ''} — ${w.status === 'ready' ? w.couples + ' couples' + (w.aired ? '' : ' (line-up, not aired)') : w.status}`);
 		continue;
 	}
 	const data = {
 		season,
 		source: sourceOf(page),
 		// ready: aired · lineup: performance order announced, not aired yet · upcoming: nothing yet
-		weeks: weeks.map(({ week, night, status, aired }) => ({ week, night, status: status !== 'ready' ? 'upcoming' : aired ? 'ready' : 'lineup' })),
+		// airsAt: 8 PM Eastern on the episode's air date (when known)
+		weeks: weeks.map(({ week, night, status, aired, airDate }) => ({ week, night, status: status !== 'ready' ? 'upcoming' : aired ? 'ready' : 'lineup', ...(airDate ? { airsAt: showTime(airDate) } : {}) })),
 		episodes: ready.map((w) => episodes[w.week])
 	};
 	if (flag('dry-run')) { process.stdout.write(JSON.stringify(data, null, '\t') + '\n'); continue; }

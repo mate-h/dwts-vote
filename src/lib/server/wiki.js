@@ -282,9 +282,60 @@ function extractWeek(sec, match, { season }) {
 	};
 }
 
+// ---------- air dates ----------
+// DWTS airs live at 8:00 PM Eastern (5 PM Pacific) in every US time zone. Wikipedia only has the date.
+export const SHOW_HOUR_ET = 20;
+
+/** The "Episodes" table: [{ title, date: 'YYYY-MM-DD' }] in table order. */
+export function parseAirDates(wikitext) {
+	const out = [];
+	for (const m of stripComments(wikitext).matchAll(/\{\{(?:#invoke:)?Episode list[\s\S]*?\n\}\}/g)) {
+		const title = clean(/\|\s*Title\s*=\s*(.*)/.exec(m[0])?.[1] ?? '');
+		const d = /AirDate\s*=\s*\{\{\s*Start date\s*\|\s*(\d{4})\s*\|\s*(\d{1,2})\s*\|\s*(\d{1,2})/i.exec(m[0]);
+		if (d) out.push({ title, date: `${d[1]}-${d[2].padStart(2, '0')}-${d[3].padStart(2, '0')}` });
+	}
+	return out;
+}
+
+/** UTC instant of 8 PM in New York on a date (handles daylight saving time). */
+export function showTime(date, hour = SHOW_HOUR_ET) {
+	const [y, m, d] = date.split('-').map(Number);
+	let t = Date.UTC(y, m - 1, d, hour + 5); // EST guess (UTC-5)
+	const nyHour = Number(new Intl.DateTimeFormat('en-US', { timeZone: 'America/New_York', hour: 'numeric', hourCycle: 'h23' }).format(t));
+	if (nyHour !== hour) t -= (nyHour - hour) * 3600_000; // EDT (UTC-4)
+	return new Date(t).toISOString();
+}
+
+/** Give each week the air date of its episode: the episode whose title shares the most words with the
+ * week's theme (results shows and specials lose ties), else the next regular episode in order. */
+function assignAirDates(weeks, airDates) {
+	const minor = /result|after party|holiday|special|recap|countdown|dance off|rematch|night (two|2)\b/i;
+	const stop = new Set(['night', 'the', 'of', 'and', 'a', 'week', 'part', 'one', '1', 'season']);
+	const words = (t) => new Set(fold(t).split(/[^a-z0-9]+/).filter((w) => w && !stop.has(w)));
+	const used = new Set();
+	let next = 0;
+	for (const w of weeks) {
+		const want = words(w.night);
+		let best = -1, bestScore = 0;
+		airDates.forEach((e, i) => {
+			if (used.has(i)) return;
+			const have = words(e.title);
+			const shared = [...want].filter((x) => have.has(x)).length;
+			if (!shared) return;
+			const score = shared * 4 - (minor.test(e.title) ? 2 : 0) - (i < next ? 1 : 0);
+			if (score > bestScore) { best = i; bestScore = score; }
+		});
+		if (best < 0) best = airDates.findIndex((e, i) => i >= next && !used.has(i) && !minor.test(e.title));
+		if (best < 0) continue;
+		used.add(best);
+		w.airDate = airDates[best].date;
+		next = Math.max(next, best + 1);
+	}
+}
+
 /**
  * Parse a season article.
- * @returns {{ cast, weeks: {week, night, status: 'ready'|'upcoming'|'error', aired?: boolean, couples?: number, error?: string}[], episodes: Record<number, object> }}
+ * @returns {{ cast, weeks: {week, night, status: 'ready'|'upcoming'|'error', aired?: boolean, couples?: number, airDate?: string, error?: string}[], episodes: Record<number, object> }}
  *   episodes holds the full ballot for every 'ready' week.
  */
 export function parseSeason(wikitext, season, { source } = {}) {
@@ -304,6 +355,7 @@ export function parseSeason(wikitext, season, { source } = {}) {
 			weeks.push({ week: sec.week, night: sec.night, status: 'error', error: String(e?.message ?? e) });
 		}
 	}
+	assignAirDates(weeks, parseAirDates(wikitext));
 	return { cast, weeks, episodes };
 }
 
