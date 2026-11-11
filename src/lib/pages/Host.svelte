@@ -25,6 +25,10 @@
 		try {
 			data = await fetchVotes(room);
 			if (data.info) show.season = data.info.season;
+			if (typeof data.title === 'string') {
+				show.roomTitle = data.title;
+				rememberTitle(data.title);
+			}
 		} catch {
 			status = 'Could not load the room.';
 		}
@@ -38,6 +42,26 @@
 		await tick();
 		strip?.querySelector('[aria-pressed="true"]')?.scrollIntoView({ inline: 'center', block: 'nearest' });
 	});
+
+	// The landing page lists rooms you host by name.
+	function rememberTitle(title) {
+		if (!room || !data.isHost) return;
+		try {
+			if (title) localStorage.setItem('room-title:' + room, title);
+			else localStorage.removeItem('room-title:' + room);
+		} catch {}
+	}
+
+	async function rename(title) {
+		const r = await callApi(room, 'title', { title });
+		if (!r.ok) {
+			status = r.status === 403 ? 'Only the host can rename the room.' : 'Could not rename the room.';
+			return false;
+		}
+		status = '';
+		await refresh();
+		return true;
+	}
 
 	async function reset() {
 		if (!confirm('Start the next round? This clears ALL votes for the current episode.')) return;
@@ -68,7 +92,7 @@
 <section class="panel">
 	<h2>Host controls</h2>
 	{#if room}
-		<ShareRoom {room} />
+		<ShareRoom {room} title={data.title ?? ''} canEdit={data.isHost} onrename={rename} />
 	{:else}
 		<p class="note">Heads up: anyone on this network who knows this URL can change the episode or reset the votes. It's a LAN party app.</p>
 	{/if}

@@ -15,7 +15,7 @@
  const { room, base } = $derived(roomOf(page));
  let data = $state({counts:{},avg:{},ballots:[],mine:{},round:null,episode:null,info:null,season:null,couples:null});
  const show = getProfile();
- $effect(() => { if (data.info) show.season = data.info.season; });
+ $effect(() => { if (data.info) show.season = data.info.season; if (typeof data.title === 'string') show.roomTitle = data.title; });
  let myName = $state('');
  let busy = $state(false);
  let presentingId = $state(null);

@@ -13,7 +13,11 @@
 	onMount(() => {
 		fetch('/api/catalog').then((r) => r.json()).then((c) => (next = c.next)).catch(() => {});
 		try {
-			hosted = Object.keys(localStorage).filter((k) => k.startsWith('room-host:')).map((k) => k.slice('room-host:'.length)).sort();
+			hosted = Object.keys(localStorage)
+				.filter((k) => k.startsWith('room-host:'))
+				.map((k) => k.slice('room-host:'.length))
+				.sort()
+				.map((code) => ({ code, title: localStorage.getItem('room-title:' + code) ?? '' }));
 		} catch {}
 	});
 
@@ -64,7 +68,7 @@
 	{#if hosted.length}
 		<div class="mine">
 			<p>Rooms you host</p>
-			{#each hosted as r (r)}<a href={'/r/' + r}>{r}</a>{/each}
+			{#each hosted as r (r.code)}<a href={'/r/' + r.code} title={r.title ? 'Room ' + r.code : undefined}>{r.title || r.code}</a>{/each}
 		</div>
 	{/if}
 </section>

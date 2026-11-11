@@ -88,7 +88,7 @@ export class RoomDO extends DurableObject {
 
 	/** What the room is scoring, for its link preview. Null if the room doesn't exist. */
 	preview() {
-		return this.meta ? { info: infoOf(getEpisode(this.room.episode)) } : null;
+		return this.meta ? { info: infoOf(getEpisode(this.room.episode)), title: this.room.title } : null;
 	}
 
 	async isHost(hostToken) {

@@ -9,17 +9,18 @@
 
 	const room = $derived(page.data.room ?? null);
 	const info = $derived(page.data.roomInfo ?? null);
+	const roomName = $derived(page.data.roomTitle || '');
 	const episode = $derived(info ? `Season ${info.season} · ${info.night || 'Episode ' + info.week}` : '');
-	const title = $derived(room ? `Join room ${room}${episode ? ' · ' + episode : ''}` : `${NAME} · Score Dancing with the Stars with friends`);
+	const title = $derived(room ? `Join ${roomName ? `“${roomName}”` : `room ${room}`}${episode ? ' · ' + episode : ''}` : `${NAME} · Score Dancing with the Stars with friends`);
 	const description = $derived(
 		room
-			? `You're invited to score ${episode ? episode.replace(' · ', ', ') : 'Dancing with the Stars'} together in room ${room}. Tap the link, pick a name, and rate each couple from your phone. Scores are revealed once everyone has voted.`
+			? `You're invited to score ${episode ? episode.replace(' · ', ', ') : 'Dancing with the Stars'} together in ${roomName ? `“${roomName}” (room ${room})` : `room ${room}`}. Tap the link, pick a name, and rate each couple from your phone. Scores are revealed once everyone has voted.`
 			: DESCRIPTION
 	);
 	// Room previews always use the canonical domain, whichever host served the page.
 	const url = $derived(SITE + (room ? `/r/${room}` : page.url.pathname === '/' ? '/' : page.url.pathname));
 	const image = $derived(SITE + (room ? '/og-room.png' : '/og.png'));
-	const imageAlt = $derived(room ? `Invitation to Dancing with the Stars watch party room ${room}` : 'Golden scoring paddles showing 8, 10 and 9 next to the words "Score every dance with your friends"');
+	const imageAlt = $derived(room ? `Invitation to Dancing with the Stars watch party ${roomName ? `“${roomName}”` : `room ${room}`}` : 'Golden scoring paddles showing 8, 10 and 9 next to the words "Score every dance with your friends"');
 	const indexable = $derived(!room && page.status === 200 && page.url.pathname === '/');
 
 	const jsonLd = JSON.stringify({

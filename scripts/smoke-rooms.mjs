@@ -30,6 +30,13 @@ check('wrong token cannot reset', (await post(`/api/r/${code}/reset`, {}, 'nope'
 const switched = await post(`/api/r/${code}/episode`, { episode: 's34e03' }, hostToken);
 check('host switches episode', switched.ok && (await switched.json()).episode === 's34e03');
 
+check('guest cannot rename room', (await post(`/api/r/${code}/title`, { title: 'Nope' })).status === 403);
+const named = await post(`/api/r/${code}/title`, { title: "  Mac's   <Grammy> party  " }, hostToken);
+check('host names the room', named.ok && (await named.json()).title === "Mac's Grammy party");
+const page = await (await get(`/r/${code}`)).text();
+check('share preview uses the name', page.includes('Join “Mac&#39;s Grammy party”') || page.includes('Join “Mac\'s Grammy party”'), page.match(/<title>[^<]*/)?.[0]);
+check('code link unchanged after rename', (await get(`/api/r/${code}/votes?device=guestdevice1`)).ok);
+
 const v1 = await (await post(`/api/r/${code}/votes`, { device: 'guestdevice1', coupleId: 'affleck', score: 8, name: 'Guest' })).json();
 check('guest vote hidden until host votes', v1.mine?.affleck === 8 && v1.revealed?.affleck === false);
 const v2 = await (await post(`/api/r/${code}/votes`, { device: 'hostdevice1', coupleId: 'affleck', score: 10, name: 'Host' })).json();

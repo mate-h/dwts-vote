@@ -24,10 +24,17 @@ function normalizeVotes(rawVotes, couples) {
 	return out;
 }
 
+export const TITLE_MAX = 40;
+/** Room name: printable text, single spaces, at most TITLE_MAX characters. */
+export function cleanTitle(t) {
+	return [...String(t ?? '').replace(/[\p{C}<>]/gu, '').replace(/\s+/g, ' ').trim()].slice(0, TITLE_MAX).join('').trim();
+}
+
 export class Room {
 	episode; // key, e.g. "s34e06"
 	rounds = {};
 	votesByEpisode = {};
+	title = ''; // room name the host picked ("" = unnamed); the code in the link never changes
 	live = {}; // episode key -> latest judges' scores/results fetched during the broadcast (live.js)
 	lastSeen = new Map(); // device -> ms; in memory only
 
@@ -36,6 +43,7 @@ export class Room {
 		this.episode = defaultEpisode;
 		if (!saved) return;
 		this.live = saved.live ?? {};
+		this.title = cleanTitle(saved.title);
 		if (saved.store) {
 			const loaded = migrateKey(saved.episode);
 			this.episode = getEpisode(loaded) ? loaded : defaultEpisode;
@@ -54,7 +62,7 @@ export class Room {
 		const store = {};
 		const ids = new Set([...Object.keys(this.votesByEpisode), ...Object.keys(this.rounds)]);
 		for (const id of ids) store[id] = { round: this.rounds[id] ?? 'initial', votes: this.votesByEpisode[id] ?? {} };
-		return { episode: this.episode, store, live: this.live };
+		return { episode: this.episode, title: this.title, store, live: this.live };
 	}
 
 	activeCouples() {
@@ -146,6 +154,7 @@ export class Room {
 		return {
 			round: this.rounds[this.episode] ?? 'initial',
 			episode: this.episode,
+			title: this.title,
 			info: infoOf(ep),
 			season: ep?.label ?? '', // display label (kept for older clients)
 			played: this.played(),
@@ -250,6 +259,12 @@ export function handle(room, action, method, input, { isHost }) {
 		case 'POST episode': {
 			if (!isHost) return err(403, 'Only the host can change the episode');
 			if (!room.setEpisode(input.episode)) return err(400, 'bad episode');
+			return { status: 200, body: room.tally(), changed: true };
+		}
+		case 'POST title': {
+			if (!isHost) return err(403, 'Only the host can rename the room');
+			if (typeof input.title !== 'string') return err(400, 'Invalid name');
+			room.title = cleanTitle(input.title);
 			return { status: 200, body: room.tally(), changed: true };
 		}
 		case 'POST reset': {

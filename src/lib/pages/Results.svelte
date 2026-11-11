@@ -14,7 +14,7 @@
 			.sort((a, b) => b.sum - a.sum || b.n - a.n || a.order - b.order)
 	);
 	const show = getProfile();
-	$effect(() => { if (data.info) show.season = data.info.season; });
+	$effect(() => { if (data.info) show.season = data.info.season; if (typeof data.title === 'string') show.roomTitle = data.title; });
 	onMount(() => {
 		return subscribe(room, (d) => (data = d));
 	});

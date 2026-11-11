@@ -8,5 +8,5 @@ export async function load({ params, url }) {
 	if (code !== params.room) redirect(308, url.pathname.replace('/r/' + params.room, '/r/' + code) + url.search);
 	const preview = await roomPreview(code);
 	if (!preview) error(404, 'Room not found');
-	return { room: code, roomInfo: preview.info };
+	return { room: code, roomInfo: preview.info, roomTitle: preview.title ?? '' };
 }
