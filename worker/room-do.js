@@ -9,7 +9,7 @@
 // to an episode that's airing (live.js), and deleting the room after 30 days without a change.
 import { DurableObject } from 'cloudflare:workers';
 import { Room, handle } from '../src/lib/server/room.js';
-import { LATEST, getEpisode } from '../src/lib/server/episodes.js';
+import { LATEST, getEpisode, infoOf } from '../src/lib/server/episodes.js';
 import { fetchLive, liveChanged, LIVE_INTERVAL_MS } from '../src/lib/server/live.js';
 
 const IDLE_TTL_MS = 30 * 24 * 60 * 60 * 1000;
@@ -84,6 +84,11 @@ export class RoomDO extends DurableObject {
 
 	exists() {
 		return !!this.meta;
+	}
+
+	/** What the room is scoring, for its link preview. Null if the room doesn't exist. */
+	preview() {
+		return this.meta ? { info: infoOf(getEpisode(this.room.episode)) } : null;
 	}
 
 	async isHost(hostToken) {

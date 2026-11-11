@@ -34,8 +34,9 @@ export async function createRoom() {
 	error(503, 'Could not allocate a room code, please try again');
 }
 
-export async function roomExists(code) {
-	return await roomStub(code).exists();
+/** { info } for an existing room (the episode it's scoring), else null. */
+export async function roomPreview(code) {
+	return await roomStub(code).preview();
 }
 
 /** Run one room API action. `room` is null in LAN mode. */

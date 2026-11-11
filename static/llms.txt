@@ -1,0 +1,22 @@
+# DWTS Star Ballot
+
+> A free, unofficial fan web app for scoring Dancing with the Stars with friends while the show airs. Create a room, share its link, and everyone rates each couple's dance from 1 to 10 on their own phone. Scores stay hidden until the whole room has voted, then they're revealed together next to the judges' scores.
+
+- Site: https://dwts.mateh.dev/
+- Source code (open source): https://github.com/mate-h/dwts-vote
+
+## How it works
+
+- Anyone can create a room at https://dwts.mateh.dev/ — no account or app install. The creator is the room's host.
+- The host shares the room link (https://dwts.mateh.dev/r/CODE, a 6-character code). Friends open it, pick a name, and vote.
+- Couples come up in the night's performance order. Each person gives every couple a score from 1 to 10.
+- A couple's scores are revealed once everyone in the room has voted on it, so nobody is swayed by the others.
+- After the reveal, the room shows the official judges' scores and who went home, updated live during the broadcast.
+- The host picks the episode: every season of the US show (seasons 1–35) is available, plus a countdown to the next live show (8 PM Eastern on ABC and Disney+).
+- Results and a look-back view show room totals, averages and how many 10s each couple got.
+
+## Notes
+
+- Not affiliated with ABC, Disney or BBC Studios. Episode line-ups and judges' scores come from Wikipedia (CC BY-SA).
+- The public audience vote is never published by the show, so this app has the room's own scores and the judges' scores only.
+- Rooms are private and expire after 30 days without activity.

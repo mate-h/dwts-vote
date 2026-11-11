@@ -6,9 +6,19 @@ export { RoomDO } from './room-do.js';
 
 const LIVE = /^\/api\/r\/([A-HJKMNP-Z2-9]{6})\/live$/;
 
+// The workers.dev address forwards to the custom domain (path and query kept; 308 keeps POST bodies).
+const CANONICAL_HOST = 'dwts.mateh.dev';
+const OLD_HOSTS = new Set(['dwts-vote.mateh.workers.dev']);
+
 export default {
 	async fetch(request, env, ctx) {
-		const m = LIVE.exec(new URL(request.url).pathname);
+		const url = new URL(request.url);
+		if (OLD_HOSTS.has(url.hostname)) {
+			url.protocol = 'https:';
+			url.hostname = CANONICAL_HOST;
+			return Response.redirect(url.toString(), 308);
+		}
+		const m = LIVE.exec(url.pathname);
 		if (m) {
 			if (request.headers.get('Upgrade')?.toLowerCase() !== 'websocket') return new Response('Expected a WebSocket', { status: 426 });
 			return env.ROOMS.get(env.ROOMS.idFromName(m[1])).fetch(request);

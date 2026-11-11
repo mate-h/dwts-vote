@@ -1,6 +1,7 @@
 <script>
 	import { page } from '$app/state';
  import ProfileModal from '#lib/ProfileModal.svelte';
+ import Meta from '#lib/Meta.svelte';
  import { setProfile, ProfileController } from '#lib/profile.svelte.js';
  import { roomOf, hostToken } from '#lib/api.js';
  const show = new ProfileController();
@@ -20,7 +21,7 @@
 	const here = $derived(page.url.pathname + (page.url.searchParams.get('view') === 'history' ? '?view=history' : ''));
 </script>
 
-<svelte:head><title>Dancing with the Stars</title><meta name="theme-color" content="#0a0708" /></svelte:head>
+<Meta />
 
 <div class="sparkles" aria-hidden="true"></div>
 <header>

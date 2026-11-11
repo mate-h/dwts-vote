@@ -1,3 +1,22 @@
-# allow crawling everything by default
+# Search engines and AI crawlers are welcome. Room pages (/r/…) carry a noindex tag instead of a
+# Disallow, so link-preview bots (iMessage, Slack, X, Discord, WhatsApp) can still read their tags.
 User-agent: *
-Disallow:
+Allow: /
+Disallow: /api/
+
+# AI search and assistants: explicitly allowed.
+User-agent: GPTBot
+User-agent: OAI-SearchBot
+User-agent: ChatGPT-User
+User-agent: ClaudeBot
+User-agent: Claude-SearchBot
+User-agent: Claude-User
+User-agent: PerplexityBot
+User-agent: Perplexity-User
+User-agent: Google-Extended
+User-agent: Applebot-Extended
+User-agent: CCBot
+Allow: /
+Disallow: /api/
+
+Sitemap: https://dwts.mateh.dev/sitemap.xml
