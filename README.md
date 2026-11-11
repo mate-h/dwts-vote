@@ -1,6 +1,6 @@
 # Star Ballot — A Dancing with the Stars–style vote
 
-Fan-made voting app (SvelteKit + Svelte 5). Not affiliated with ABC/BBC.
+Fan-made voting app (SvelteKit + Svelte 5), live at https://dwts.mateh.dev.
 
 It runs in two modes from the same code:
 
@@ -63,3 +63,7 @@ npm run build                                 # (or npm run cf:deploy) then rest
 ```
 
 The parser is in `src/lib/server/wiki.js`. Couples are matched to the season's cast table, and votes are keyed by the celebrity's last name. Photos and bios (`src/lib/profiles.js`) exist for season 34 only. Other seasons show initials.
+
+---
+
+*Built with AI-assisted coding. Unofficial fan project, not affiliated with ABC, Disney or BBC Studios.*
