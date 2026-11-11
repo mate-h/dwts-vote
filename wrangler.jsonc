@@ -14,5 +14,8 @@
 		"bindings": [{ "name": "ROOMS", "class_name": "RoomDO" }]
 	},
 	"migrations": [{ "tag": "v1", "new_sqlite_classes": ["RoomDO"] }],
+	// Custom domain (the mateh.dev zone is on this account); workers.dev stays on so old room links keep working.
+	"routes": [{ "pattern": "dwts.mateh.dev", "custom_domain": true }],
+	"workers_dev": true,
 	"observability": { "enabled": true }
 }
